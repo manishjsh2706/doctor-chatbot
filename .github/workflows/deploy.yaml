@@ -6,77 +6,25 @@ on:
       - main
 
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
-
     steps:
+      # 1. Pull your code from GitHub onto the runner
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.LIGHTSAIL_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.LIGHTSAIL_HOST }} >> ~/.ssh/known_hosts
+      # 2. Log in to Docker Hub using the secrets you set up
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Deploy to Lightsail
-        run: |
-          ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} << 'EOF'
-            set -e
-
-            # ------------------------------
-            # Install Docker if not installed
-            # ------------------------------
-            if ! command -v docker &> /dev/null
-            then
-                echo "Docker not found, installing..."
-                sudo apt update
-                sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-                curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-                sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
-                sudo apt update
-                sudo apt install -y docker-ce
-                sudo systemctl enable docker
-                sudo systemctl start docker
-            else
-                echo "Docker is already installed"
-            fi
-
-            # ------------------------------
-            # Ensure user can run Docker
-            # ------------------------------
-            sudo usermod -aG docker $USER || true
-            newgrp docker || true
-
-            # ------------------------------
-            # Check if directory exists, clone if missing
-            # ------------------------------
-            if [ ! -d ~/fastapi-app ]; then
-                echo "Directory not found, cloning repo..."
-                git clone https://github.com/sanjeev929/fastapi_cicd.git ~/fastapi-app
-            fi
-
-            cd ~/fastapi-app || exit 1
-
-            # Make sure we are on master
-            git fetch origin
-            git checkout master
-            git pull origin master
-
-            # ------------------------------
-            # Stop and remove old container
-            # ------------------------------
-            docker stop fastapi || true
-            docker rm fastapi || true
-
-            # ------------------------------
-            # Build new Docker image
-            # ------------------------------
-            docker build -t fastapi-app .
-
-            # ------------------------------
-            # Run new container
-            # ------------------------------
-            docker run -d --name fastapi -p 80:80 fastapi-app
-          EOF
+      # 3. Build the Dockerfile and push it to your Docker Hub repo
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # Replace 'doctor-chatbot' if your repo name is different
+          tags: ${{ secrets.DOCKER_USERNAME }}/doctor-chatbot:latest
