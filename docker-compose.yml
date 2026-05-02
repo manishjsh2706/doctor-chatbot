@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  # Service 1: Your Python Chatbot
+  app:
+    build: .
+    env_file:
+      - .env # This tells Docker to load variables from your .env file
+    ports:
+      - "5000:5000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DB_HOST=db
+      - DB_NAME=superclinic
+      - DB_USER=postgres
+      - DB_PASSWORD=admin
+    depends_on:
+      - db
+
+  # Service 2: The PostgreSQL Database
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=superclinic
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # This maps your local file to Docker
+
+volumes:
+  postgres_data:
