@@ -28,7 +28,7 @@ jobs:
           push: true
           # Replace 'doctor-chatbot' if your repo name is different
           tags: ${{ secrets.DOCKER_USERNAME }}/doctor-chatbot:latest
-    deploy:
+  deploy:
         needs: build-and-push
         runs-on: ubuntu-latest
         steps:
