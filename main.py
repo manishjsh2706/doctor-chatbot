@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import json
 from services.openai_service import call_openai
 from services.appointment_service import (
@@ -7,6 +8,7 @@ from services.appointment_service import (
 )
 
 app = Flask(__name__)
+CORS(app)
 
 conversation_history = []
 pending_booking = {}

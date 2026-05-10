@@ -5,13 +5,19 @@ function sendMessage() {
 
     appendMessage("user", message);
 
-    fetch("http://localhost:5000/chat", {
+    fetch("/chat", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({message: message})
+    }).then(res => {
+        if (!res.ok) throw new Error("Network response was not ok");
+        return res.json();
     })
-    .then(res => res.json())
-    .then(data => appendMessage("bot", data.reply));
+    .then(data => appendMessage("bot", data.reply))
+    .catch(err => {
+        console.error("Error:", err);
+        appendMessage("bot", "Error: Could not connect to the server.");
+    });
 }
 
 function appendMessage(sender, text) {
